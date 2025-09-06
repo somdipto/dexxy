@@ -1,0 +1,60 @@
+import re
+from typing import Dict, Optional, Tuple
+
+# Define intents and expected entities
+INTENTS = {
+    "create_pool": ["token1", "token2", "apy"],
+    "create_token": ["token_name", "supply"],
+    "join_pool": ["pool_id"],
+    "query_info": ["entity_type", "entity_id"],  # e.g., pool or token info query
+    "general_help": []
+}
+
+# Sample few-shot examples for prompt-driven intent recognition
+FEW_SHOT_EXAMPLES = [
+    {"user_input": "Create a liquidity pool with APT and USDC at 7% APY", "intent": "create_pool", "entities": {"token1": "APT", "token2": "USDC", "apy": "7"}},
+    {"user_input": "Launch a new token named CryptoGold with a supply of 1000000", "intent": "create_token", "entities": {"token_name": "CryptoGold", "supply": "1000000"}},
+    {"user_input": "Join pool 12345", "intent": "join_pool", "entities": {"pool_id": "12345"}},
+    {"user_input": "What is the status of token CryptoGold?", "intent": "query_info", "entities": {"entity_type": "token", "entity_id": "CryptoGold"}},
+    {"user_input": "Help me with DeFi basics", "intent": "general_help", "entities": {}}
+]
+
+REQUIRED_PARAMS = {
+    "create_pool": ["token1", "token2", "apy"],
+    "create_token": ["token_name", "supply"]
+}
+
+# Dialog State to handle multi-turn conversations
+class DialogState:
+    def __init__(self):
+        self.current_intent = None
+        self.collected_entities = {}
+        self.waiting_for = None  # entity name we expect next
+
+dialog_state = DialogState()
+awaiting_confirmation = False
+
+def extract_pool_entities(text: str) -> Dict:
+    tokens = re.findall(r'\b[A-Z]{2,5}\b', text)
+    apy_match = re.search(r'(\d+)%', text)
+    return {
+        "token1": tokens[0] if len(tokens) > 0 else None,
+        "token2": tokens[1] if len(tokens) > 1 else None,
+        "apy": apy_match.group(1) if apy_match else None
+    }
+
+def extract_token_entities(text: str) -> Dict:
+    token_name_match = re.search(r'named (\w+)', text)
+    supply_match = re.search(r'supply of (\d+)', text)
+    return {
+        "token_name": token_name_match.group(1) if token_name_match else None,
+        "supply": supply_match.group(1) if supply_match else None
+    }
+
+def extract_join_pool_entities(text: str) -> Dict:
+    pool_id_match = re.search(r'pool (\d+)', text)
+    return {
+        "pool_id": pool_id_match.group(1) if pool_id_match else None
+    }
+
+import os
