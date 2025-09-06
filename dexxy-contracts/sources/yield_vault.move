@@ -30,8 +30,8 @@ module defi_suite::yield_vault {
     /// Create a new yield vault
     public entry fun create_vault(
         creator: &signer,
-        staked_token: Object<Metadata>, /// which token a user must stake
-        reward_token: Object<Metadata>, /// which token user earns aas reward 
+        staked_token: Object<Metadata>, // which token a user must stake
+        reward_token: Object<Metadata>, // which token user earns aas reward 
         reward_rate: u64 
     ) {
         let vault = Vault {
@@ -153,7 +153,7 @@ module defi_suite::yield_vault {
         vault.last_update_time = current_time;
     }
 
-    /// View function to get user stake info
+    // View function to get user stake info
     #[view]
     public fun get_user_stake(user_addr: address): (u64, u64) acquires UserStake {
         if (exists<UserStake>(user_addr)) {
@@ -164,7 +164,7 @@ module defi_suite::yield_vault {
         }
     }
 
-    /// View function to get vault info
+    // View function to get vault info
     #[view]
     public fun get_vault_info(vault_addr: address): (u64, u64, u64) acquires Vault {
         let vault = borrow_global<Vault>(vault_addr);

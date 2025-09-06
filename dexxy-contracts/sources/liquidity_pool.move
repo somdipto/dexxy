@@ -51,10 +51,10 @@ module defi_suite::liquidity_pool {
     public entry fun add_liquidity(
         user: &signer,
         pool_addr: address,
-        /// Users deposit amounts of Token X and Token Y.
+        // Users deposit amounts of Token X and Token Y.
         amount_x: u64,
         amount_y: u64
-    ) acquires Pool {
+    ) acquires Pool, LPShares {
         assert!(exists<Pool>(pool_addr), E_POOL_NOT_EXISTS);
         let pool = borrow_global_mut<Pool>(pool_addr);
         let user_addr = signer::address_of(user);
@@ -130,7 +130,7 @@ module defi_suite::liquidity_pool {
         numerator / denominator
     }
 
-    /// Get pool reserves (view function)
+    // Get pool reserves (view function)
     #[view]
     public fun get_reserves(pool_addr: address): (u64, u64) acquires Pool {
         let pool = borrow_global<Pool>(pool_addr);

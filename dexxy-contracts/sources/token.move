@@ -1,8 +1,9 @@
 module defi_suite::token {
     use std::signer;
-    use std::string::{String, utf8};
+    use std::string::{utf8};
+    use std::option;
     use aptos_framework::fungible_asset::{Self, MintRef, TransferRef, BurnRef, Metadata};
-    use aptos_framework::object::{Self, Object};
+    use aptos_framework::object::{Self};
     use aptos_framework::primary_fungible_store;
 
     /// Error codes
@@ -10,23 +11,13 @@ module defi_suite::token {
     const E_INSUFFICIENT_BALANCE: u64 = 2;
 
     /// Resource that stores the token refs for management
-    // currently unlimited supply 
     struct TokenRefs has key {
-        mint_ref: MintRef, // creator mint new tokens.
-        transfer_ref: TransferRef, // moving tokens b/w accounts
-        burn_ref: BurnRef, // burning tokens 
+        mint_ref: MintRef,
+        transfer_ref: TransferRef,
+        burn_ref: BurnRef,
     }
 
     /// Create a new fungible token
-// create_token
-// Called once to initialize a new token.
-// Steps:
-    // Creates a named object representing the token.
-    // Calls create_primary_store_enabled_fungible_asset to register metadata:
-    // name, symbol, decimals, icon_uri, project_uri
-    // Generates mint/transfer/burn capabilities.
-    // Stores them under the creator’s account.
-    // Optionally mints an initial_supply and deposits it to the creator.
     public entry fun create_token(
         creator: &signer,
         name: vector<u8>,
@@ -52,19 +43,18 @@ module defi_suite::token {
         let transfer_ref = fungible_asset::generate_transfer_ref(&constructor_ref);
         let burn_ref = fungible_asset::generate_burn_ref(&constructor_ref);
         
-        // Store refs for later use
+        // Mint initial supply to creator *before* moving refs
+        if (initial_supply > 0) {
+            let fa = fungible_asset::mint(&mint_ref, initial_supply);
+            primary_fungible_store::deposit(signer::address_of(creator), fa);
+        };
+
+        // Now store refs for later use
         move_to(creator, TokenRefs {
             mint_ref,
             transfer_ref,
             burn_ref,
         });
-
-        // Mint initial supply to creator
-        if (initial_supply > 0) {
-            let metadata = object::object_from_constructor_ref<Metadata>(&constructor_ref);
-            let fa = fungible_asset::mint(&mint_ref, initial_supply);
-            primary_fungible_store::deposit(signer::address_of(creator), fa);
-        };
     }
 
     /// Mint tokens to a specific address (only token creator)
@@ -90,7 +80,14 @@ module defi_suite::token {
         assert!(exists<TokenRefs>(creator_addr), E_NOT_OWNER);
         
         let token_refs = borrow_global<TokenRefs>(creator_addr);
-        let fa = primary_fungible_store::withdraw(creator, amount);
+            
+        // Retrieve the metadata object for this token
+        let metadata = fungible_asset::mint_ref_metadata(&token_refs.mint_ref);
+
+        // Withdraw from the creator's primary store
+        let fa = primary_fungible_store::withdraw(creator, metadata, amount);
+
+        // Burn the withdrawn tokens
         fungible_asset::burn(&token_refs.burn_ref, fa);
     }
 }
