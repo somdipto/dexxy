@@ -1,6 +1,6 @@
 module defi_suite::liquidity_pool {
     use std::signer;
-    use aptos_framework::fungible_asset::{Self, Metadata, FungibleAsset};
+    use aptos_framework::fungible_asset::{Self, Metadata};
     use aptos_framework::object::{Self, Object};
     use aptos_framework::primary_fungible_store;
     use aptos_std::math64;
